@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Factura</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+        .container {
+            width: 800px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border: 1px solid #ddd;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .header img {
+            width: 100px;
+            height: auto;
+            margin-right: auto;
+        }
+        .header h1 {
+            font-size: 32px;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            flex-grow: 1;
+            margin: 0;
+        }
+        h4 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+        .client-info, .totals, .items {
+            width: 100%;
+            margin-bottom: 20px;
+            border-collapse: collapse;
+        }
+        .client-info td {
+            padding: 8px;
+            font-size: 14px;
+        }
+        .client-info td:first-child {
+            width: 50%;
+        }
+        .items th, .items td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+            font-size: 14px;
+        }
+        .items th {
+            background-color: #333;
+            color: #fff;
+        }
+        .totals td {
+            text-align: right;
+            padding: 8px;
+            font-size: 16px;
+            color: #333;
+        }
+        .totals tr:first-child td {
+            font-weight: bold;
+        }
+        .panel-info {
+            font-size: 12px;
+            color: #555;
+            border-top: 1px solid #ddd;
+            padding-top: 10px;
+            margin-top: 20px;
+            text-align: center;
+            background-color: #f5f5f5;
+        }
+        .qr img {
+            width: 100px;
+            display: block;
+            margin: 20px auto;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <img src="https://cdn-icons-png.flaticon.com/512/5949/5949076.png" alt="Logo de la empresa">
+        <h1>Factura</h1>
+    </div>
+
+    <table class="client-info">
+        <tr>
+            <td><strong>Nombre:</strong> {{cliente}}</td>
+            <td><strong>Dirección:</strong> {{direccion}}</td>
+        </tr>
+        <tr>
+            <td><strong>Fecha:</strong> {{fecha}}</td>
+        </tr>
+        <tr>
+            <td><strong>Teléfono:</strong> {{telefono}}</td>
+            <td><strong>Email:</strong> {{email}}</td>
+        </tr>
+    </table>
+
+    <table class="items">
+        <thead>
+        <tr>
+            <th>Cantidad</th>
+            <th>Concepto</th>
+            <th>Precio Unitario</th>
+            <th>Total</th>
+        </tr>
+        </thead>
+        <tbody>
+
+        {{productos}}
+        </tbody>
+    </table>
+
+    <table class="totals">
+        <tr>
+            <td><strong>Subtotal:</strong></td>
+            <td>{{subtotal}}</td>
+        </tr>
+        <tr>
+            <td><strong>IVA ({{iva}} %):</strong></td>
+            <td>{{ivaMonto}}</td>
+        </tr>
+        <tr>
+            <td><strong>Total:</strong></td>
+            <td>{{total}}</td>
+        </tr>
+    </table>
+
+    <div class="panel-info">
+        <p>"La alteración, falsificación o comercialización ilegal de este documento está penado por la ley"</p>
+    </div>
+
+    <div class="qr">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/d/d7/Commons_QR_code.png" alt="Código QR">
+    </div>
+</div>
+</body>
+</html>
