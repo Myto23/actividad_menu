@@ -9,12 +9,10 @@ import 'send_email_service.dart';
 import 'openai_service.dart';
 import 'creacion_cuenta_screen.dart';
 import 'listado_screen.dart';
-import 'package:flutter/services.dart';
-import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
+import 'package:pdf/widgets.dart' as pw;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/standalone.dart' as tz;
-
 
 class FacturaScreen extends StatefulWidget {
   final String loggedInUserEmail;
@@ -94,18 +92,17 @@ class _FacturaScreenState extends State<FacturaScreen> {
     return true;
   }
 
-  Future<void> _generateInvoiceFromHtml() async {
+  Future<void> _generateInvoice() async {
     setState(() {
       _isGeneratingInvoice = true;
     });
 
     try {
-      String htmlTemplate = await rootBundle.loadString('assets/factura.html');
-
       final total = items.fold<double>(
         0,
             (sum, item) => sum + (item['precio'] * item['cantidad']),
       );
+
       final impuesto = double.parse(_impuestoController.text);
       final ivaMonto = total * impuesto / 100;
       final totalConImpuesto = total + ivaMonto;
@@ -122,28 +119,87 @@ class _FacturaScreenState extends State<FacturaScreen> {
       final String fecha = DateFormat('dd-MM-yyyy').format(chileTime);
       final String hora = DateFormat('HH:mm').format(chileTime);
 
-      String htmlContent = htmlTemplate
-          .replaceAll('{{cliente}}', cliente)
-          .replaceAll('{{direccion}}', direccion)
-          .replaceAll('{{fecha}}', fecha)
-          .replaceAll('{{hora}}', hora)
-          .replaceAll('{{telefono}}', telefono)
-          .replaceAll('{{email}}', email)
-          .replaceAll('{{productos}}', _buildHtmlProducts())
-          .replaceAll('{{subtotal}}', _formatCurrency(total))
-          .replaceAll('{{iva}}', impuesto.toString())
-          .replaceAll('{{ivaMonto}}', _formatCurrency(ivaMonto))
-          .replaceAll('{{total}}', _formatCurrency(totalConImpuesto));
+      // Cargamos las imágenes de manera anticipada.
+      final logoData = await rootBundle.load('assets/logo.png');
+      final qrCodeData = await rootBundle.load('assets/qr.png');
+
+      final logoImage = pw.MemoryImage(logoData.buffer.asUint8List());
+      final qrCodeImage = pw.MemoryImage(qrCodeData.buffer.asUint8List());
+
+      final pdf = pw.Document();
+      pdf.addPage(
+        pw.Page(
+          pageFormat: PdfPageFormat.a4,
+          build: (pw.Context context) {
+            return pw.Container(
+              padding: pw.EdgeInsets.all(20),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Row(
+                    mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                    children: [
+                      pw.Image(logoImage, width: 100),
+                      pw.Text('Factura', style: pw.TextStyle(fontSize: 32, fontWeight: pw.FontWeight.bold)),
+                    ],
+                  ),
+                  pw.SizedBox(height: 20),
+                  pw.Table.fromTextArray(
+                    cellStyle: pw.TextStyle(fontSize: 14),
+                    headers: null,
+                    data: [
+                      ['Nombre:', cliente],
+                      ['Dirección:', direccion],
+                      ['Teléfono:', telefono],
+                      ['Email:', email],
+                      ['Fecha:', fecha],
+                      ['Hora:', hora],
+                    ],
+                  ),
+                  pw.SizedBox(height: 20),
+                  pw.Table.fromTextArray(
+                    headers: ['Cantidad', 'Concepto', 'Precio Unitario', 'Total'],
+                    data: items.map((item) {
+                      final totalItem = item['precio'] * item['cantidad'];
+                      return [
+                        item['cantidad'].toString(),
+                        item['producto'],
+                        _formatCurrency(item['precio']),
+                        _formatCurrency(totalItem),
+                      ];
+                    }).toList(),
+                    border: pw.TableBorder.all(color: PdfColors.grey, width: 0.5),
+                    headerStyle: pw.TextStyle(color: PdfColors.white, fontWeight: pw.FontWeight.bold),
+                    headerDecoration: pw.BoxDecoration(color: PdfColors.blueGrey),
+                  ),
+                  pw.SizedBox(height: 20),
+                  pw.Table.fromTextArray(
+                    headers: null,
+                    data: [
+                      ['Subtotal:', _formatCurrency(total)],
+                      ['IVA (${impuesto}%):', _formatCurrency(ivaMonto)],
+                      ['Total:', _formatCurrency(totalConImpuesto)],
+                    ],
+                    cellAlignment: pw.Alignment.centerRight,
+                  ),
+                  pw.SizedBox(height: 20),
+                  pw.Text(
+                    '"La alteración, falsificación o comercialización ilegal de este documento está penado por la ley"',
+                    style: pw.TextStyle(fontSize: 12, color: PdfColors.grey),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                  pw.SizedBox(height: 20),
+                  pw.Image(qrCodeImage, width: 100),
+                ],
+              ),
+            );
+          },
+        ),
+      );
 
       final output = await getTemporaryDirectory();
       final file = File("${output.path}/factura.pdf");
-
-      await Printing.convertHtml(
-        format: PdfPageFormat.a4,
-        html: htmlContent,
-      ).then((pdfBytes) async {
-        await file.writeAsBytes(pdfBytes);
-      });
+      await file.writeAsBytes(await pdf.save());
 
       await emailService.sendInvoiceByEmail(widget.loggedInUserEmail, file);
 
@@ -163,7 +219,7 @@ class _FacturaScreenState extends State<FacturaScreen> {
         _isInvoiceSent = true;
       });
     } catch (e) {
-      print('Error al generar factura desde HTML: $e');
+      print('Error al generar factura: $e');
     } finally {
       setState(() {
         _isGeneratingInvoice = false;
@@ -171,22 +227,6 @@ class _FacturaScreenState extends State<FacturaScreen> {
     }
   }
 
-
-  String _buildHtmlProducts() {
-    StringBuffer productBuffer = StringBuffer();
-    for (var item in items) {
-      final totalItem = _formatCurrency(item['precio'] * item['cantidad']);
-      productBuffer.writeln('''
-      <tr>
-        <td>${item['cantidad']}</td>
-        <td>${item['producto']}</td>
-        <td>${_formatCurrency(item['precio'])}</td>
-        <td>$totalItem</td>
-      </tr>
-    ''');
-    }
-    return productBuffer.toString();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -204,119 +244,6 @@ class _FacturaScreenState extends State<FacturaScreen> {
           color: Colors.white,
         ),
       ),
-      drawer: Drawer(
-        width: MediaQuery.of(context).size.width * 0.8,
-        child: Container(
-          color: Colors.white,
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: <Widget>[
-              SizedBox(height: 40),
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Inicio',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-                    ),
-                    Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-                  ],
-                ),
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => MainScreen(loggedInUserEmail: widget.loggedInUserEmail)),
-                  );
-                },
-              ),
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Creación Cuenta',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-                    ),
-                    Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-                  ],
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => CreacionCuentaScreen(loggedInUserEmail: widget.loggedInUserEmail)),
-                  );
-                },
-              ),
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Listado',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-                    ),
-                    Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-                  ],
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ListadoScreen(loggedInUserEmail: widget.loggedInUserEmail)),
-                  );
-                },
-              ),
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Generar Factura',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-                    ),
-                    Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-                  ],
-                ),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => FacturaScreen(loggedInUserEmail: widget.loggedInUserEmail)),
-                  );
-                },
-              ),
-              ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
-                title: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Cerrar Sesión',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
-                    ),
-                    Icon(Icons.logout, size: 16, color: Colors.grey),
-                  ],
-                ),
-                onTap: () {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (context) => LoginScreen()),
-                        (Route<dynamic> route) => false,
-                  );
-                },
-              )
-            ],
-          ),
-        ),
-      ),
-
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: SingleChildScrollView(
@@ -375,7 +302,7 @@ class _FacturaScreenState extends State<FacturaScreen> {
               Center(
                 child: ElevatedButton(
                   onPressed: _isFormValid && !_isGeneratingInvoice && !_isInvoiceSent
-                      ? _generateInvoiceFromHtml
+                      ? _generateInvoice
                       : null,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Color(0xFF1A5DD9),

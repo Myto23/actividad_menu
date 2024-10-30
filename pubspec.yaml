@@ -36,12 +36,14 @@ dependencies:
   flutter_masked_text2: ^0.9.1
   http: ^0.13.5
   pdf: ^3.3.0
-  printing: ^5.10.0
+  printing: ^5.11.0
   sendgrid_mailer: ^0.1.0
   intl: ^0.17.0
   flutter_html: 3.0.0-beta.2
   timezone: ^0.7.0
   flutter_dotenv: ^5.2.1
+  permission_handler: ^10.2.0
+
 
 
 
@@ -74,6 +76,8 @@ flutter:
     - assets/factura_template.pdf
     - assets/factura.html
     - .env
+    - assets/logo.png
+    - assets/qr.png
 
 
   # To add assets to your application, add an assets section, like this:
