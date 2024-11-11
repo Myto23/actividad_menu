@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'main.dart';
 import 'creacion_cuenta_screen.dart';
 
+
 class LoginScreen extends StatefulWidget {
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -46,6 +47,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _ingresar(BuildContext context) async {
+
     String correo = _correoController.text;
     String contrasena = _contrasenaController.text;
 
@@ -174,7 +176,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => CreacionCuentaScreen(loggedInUserEmail: ''),
+                    builder: (context) => CreacionCuentaScreen(
+                      loggedInUserEmail: '',
+                      fromLogin: true,
+                    ),
                   ),
                 );
               },

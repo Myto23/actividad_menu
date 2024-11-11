@@ -13,8 +13,9 @@ import 'package:flutter_masked_text2/flutter_masked_text2.dart';
 
 class CreacionCuentaScreen extends StatefulWidget {
   final String loggedInUserEmail;
+  final bool fromLogin;
 
-  CreacionCuentaScreen({required this.loggedInUserEmail});
+  CreacionCuentaScreen({required this.loggedInUserEmail, this.fromLogin = false});
 
   @override
   _CreacionCuentaScreenState createState() => _CreacionCuentaScreenState();
@@ -35,14 +36,14 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
   bool _hasInteractedFechaNacimiento = false;
   bool _hasInteractedCelular = false;
   bool _hasInteractedContrasena = false;
-
+  bool _hasInteractedConfirmacionContrasena = false;
 
   final _formKey = GlobalKey<FormState>();
   late Database database;
   bool _isDatabaseInitialized = false;
   bool _isObtenerDesdeApiButtonDisabled = false;
   bool _isRegistrarButtonEnabled = false;
-
+  bool _isConfirmPasswordVisible = false;
   bool _shouldValidate = true;
 
   String nombre = '';
@@ -59,6 +60,19 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
   final TextEditingController _correoController = TextEditingController();
   final TextEditingController _direccionController = TextEditingController();
   final TextEditingController _contrasenaController = TextEditingController();
+  final TextEditingController _confirmacionContrasenaController = TextEditingController();
+
+  bool _validateForm() {
+    return _nombreController.text.isNotEmpty &&
+        _correoController.text.isNotEmpty &&
+        _direccionController.text.isNotEmpty &&
+        _fechaNacimientoController.text.isNotEmpty &&
+        _celularController.text.isNotEmpty &&
+        _contrasenaController.text.isNotEmpty &&
+        (widget.fromLogin ? _confirmacionContrasenaController.text.isNotEmpty &&
+            _confirmacionContrasenaController.text == _contrasenaController.text : true) &&
+        _formKey.currentState?.validate() == true;
+  }
 
   @override
   void initState() {
@@ -126,7 +140,6 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
     super.dispose();
   }
 
-
   Future<void> _initDatabase() async {
     final documentsDirectory = await getApplicationDocumentsDirectory();
     final path = p.join(documentsDirectory.path, 'usuarios.db');
@@ -156,6 +169,9 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
 
   Future<void> _guardarUsuario() async {
     if (_formKey.currentState!.validate()) {
+      nombre = _nombreController.text;
+      correo = _correoController.text;
+      direccion = _direccionController.text;
       fechaNacimiento = _fechaNacimientoController.text;
       celular = _celularController.text;
 
@@ -198,7 +214,6 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
     }
   }
 
-
   Future<void> _obtenerDesdeApi() async {
     setState(() {
       _isObtenerDesdeApiButtonDisabled = true;
@@ -220,6 +235,7 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
           _celularController.text = celularApi.replaceAll(RegExp(r'[^0-9]'), '');
 
           _contrasenaController.text = data['login']['password'] ?? 'Password123';
+          _hasInteractedContrasena = true;
 
           _isRegistrarButtonEnabled = _formKey.currentState!.validate();
         });
@@ -259,7 +275,14 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
         title: Text('Creación Cuenta', style: TextStyle(color: Colors.white)),
         centerTitle: true,
         backgroundColor: Color(0xFF1A5DD9),
-        leading: Builder(
+        leading: widget.fromLogin
+            ? IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        )
+            : Builder(
           builder: (BuildContext context) {
             return IconButton(
               icon: Icon(Icons.menu, color: Colors.white),
@@ -270,7 +293,9 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
           },
         ),
       ),
-      drawer: Drawer(
+      drawer: widget.fromLogin
+          ? null
+          : Drawer(
         width: MediaQuery.of(context).size.width * 0.8,
         child: Container(
           color: Colors.white,
@@ -286,10 +311,7 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
                   children: [
                     Text(
                       'Inicio',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                      ),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
                     ),
                     Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                   ],
@@ -309,10 +331,7 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
                   children: [
                     Text(
                       'Creación Cuenta',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                      ),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
                     ),
                     Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                   ],
@@ -332,10 +351,7 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
                   children: [
                     Text(
                       'Listado',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                      ),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
                     ),
                     Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                   ],
@@ -355,10 +371,7 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
                   children: [
                     Text(
                       'Generar Factura',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w400,
-                      ),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w400),
                     ),
                     Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
                   ],
@@ -391,7 +404,7 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
                         (Route<dynamic> route) => false,
                   );
                 },
-              )
+              ),
             ],
           ),
         ),
@@ -406,8 +419,8 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
             child: Column(
               children: [
                 TextFormField(
-                  focusNode: _nombreFocusNode,
                   controller: _nombreController,
+                  focusNode: _nombreFocusNode,
                   decoration: InputDecoration(
                     labelText: 'Nombre Completo',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
@@ -415,6 +428,7 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
                   onChanged: (value) {
                     setState(() {
                       _hasInteractedNombre = true;
+                      _isRegistrarButtonEnabled = _validateForm();
                     });
                   },
                   validator: (value) {
@@ -428,11 +442,17 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
                     return null;
                   },
                   onSaved: (value) => nombre = value ?? '',
+                  onFieldSubmitted: (value) {
+                    setState(() {
+                      _hasInteractedNombre = true;
+                    });
+                  },
                 ),
                 SizedBox(height: 10),
+
                 TextFormField(
-                  focusNode: _correoFocusNode,
                   controller: _correoController,
+                  focusNode: _correoFocusNode,
                   decoration: InputDecoration(
                     labelText: 'Correo Electrónico',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
@@ -440,22 +460,26 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
                   onChanged: (value) {
                     setState(() {
                       _hasInteractedCorreo = true;
+                      _isRegistrarButtonEnabled = _validateForm();
+
                     });
                   },
                   validator: (value) {
-                    if (_hasInteractedCorreo && (value == null || value.isEmpty)) {
-                      return 'El campo Correo es obligatorio';
-                    } else if (value != null && !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                      return 'Ingrese un correo válido';
+                    if (_hasInteractedCorreo) {
+                      if (value == null || value.isEmpty) {
+                        return 'El campo Correo es obligatorio';
+                      } else if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                        return 'Formato de correo electrónico no válido';
+                      }
                     }
                     return null;
                   },
-                  onSaved: (value) => correo = value ?? '',
                 ),
                 SizedBox(height: 10),
+
                 TextFormField(
-                  focusNode: _direccionFocusNode,
                   controller: _direccionController,
+                  focusNode: _direccionFocusNode,
                   decoration: InputDecoration(
                     labelText: 'Dirección',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
@@ -463,22 +487,26 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
                   onChanged: (value) {
                     setState(() {
                       _hasInteractedDireccion = true;
+                      _isRegistrarButtonEnabled = _validateForm();
+
                     });
                   },
                   validator: (value) {
-                    if (_hasInteractedDireccion && (value == null || value.isEmpty)) {
-                      return 'El campo Dirección es obligatorio';
-                    } else if (value != null && (value.length < 5 || value.length > 100)) {
-                      return 'La dirección debe tener entre 5 y 100 caracteres';
+                    if (_hasInteractedDireccion) {
+                      if (value == null || value.isEmpty) {
+                        return 'El campo Dirección es obligatorio';
+                      } else if (value.length < 5 || value.length > 100) {
+                        return 'La dirección debe tener entre 5 y 100 caracteres';
+                      }
                     }
                     return null;
                   },
-                  onSaved: (value) => direccion = value ?? '',
                 ),
                 SizedBox(height: 10),
+
                 TextFormField(
-                  focusNode: _fechaNacimientoFocusNode,
                   controller: _fechaNacimientoController,
+                  focusNode: _fechaNacimientoFocusNode,
                   decoration: InputDecoration(
                     labelText: 'Fecha de Nacimiento',
                     hintText: 'DD/MM/YYYY',
@@ -487,54 +515,64 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
                   onChanged: (value) {
                     setState(() {
                       _hasInteractedFechaNacimiento = true;
+                      _isRegistrarButtonEnabled = _validateForm();
+
                     });
                   },
                   validator: (value) {
-                    if (_hasInteractedFechaNacimiento && (value == null || value.isEmpty)) {
-                      return 'El campo Fecha de Nacimiento es obligatorio';
-                    } else if (value != null && !RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(value)) {
-                      return 'Ingrese una fecha en el formato DD/MM/YYYY';
-                    } else if (value != null) {
-                      DateTime currentDate = DateTime.now();
-                      DateTime inputDate = DateTime.parse(
-                        '${value.substring(6)}-${value.substring(3, 5)}-${value.substring(0, 2)}',
-                      );
-                      if (inputDate.isAfter(currentDate)) {
-                        return 'La fecha debe ser pasada';
+                    if (_hasInteractedFechaNacimiento) {
+                      if (value == null || value.isEmpty) {
+                        return 'El campo Fecha de Nacimiento es obligatorio';
+                      } else if (RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(value)) {
+                        final dateParts = value.split('/');
+                        final inputDate = DateTime(
+                          int.parse(dateParts[2]),
+                          int.parse(dateParts[1]),
+                          int.parse(dateParts[0]),
+                        );
+                        if (inputDate.isAfter(DateTime.now())) {
+                          return 'Debe ser una fecha pasada';
+                        }
+                      } else {
+                        return 'Formato de fecha inválido (DD/MM/YYYY)';
                       }
                     }
                     return null;
                   },
-                  onSaved: (value) => fechaNacimiento = value ?? '',
                 ),
                 SizedBox(height: 10),
+
                 TextFormField(
-                  focusNode: _celularFocusNode,
                   controller: _celularController,
-                  keyboardType: TextInputType.number,
+                  focusNode: _celularFocusNode,
                   decoration: InputDecoration(
                     labelText: 'Número de Celular',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
                   ),
+                  keyboardType: TextInputType.number,
                   onChanged: (value) {
                     setState(() {
                       _hasInteractedCelular = true;
+                      _isRegistrarButtonEnabled = _validateForm();
+
                     });
                   },
                   validator: (value) {
-                    if (_hasInteractedCelular && (value == null || value.isEmpty)) {
-                      return 'El campo Celular es obligatorio';
-                    } else if (value != null && !RegExp(r'^\d{10,15}$').hasMatch(value)) {
-                      return 'Ingrese un celular válido (10-15 dígitos)';
+                    if (_hasInteractedCelular) {
+                      if (value == null || value.isEmpty) {
+                        return 'El campo Celular es obligatorio';
+                      } else if (!RegExp(r'^\d{10,15}$').hasMatch(value)) {
+                        return 'El número debe tener entre 10 y 15 dígitos';
+                      }
                     }
                     return null;
                   },
-                  onSaved: (value) => celular = value ?? '',
                 ),
                 SizedBox(height: 10),
+
                 TextFormField(
-                  focusNode: _contrasenaFocusNode,
                   controller: _contrasenaController,
+                  focusNode: _contrasenaFocusNode,
                   decoration: InputDecoration(
                     labelText: 'Contraseña',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
@@ -553,22 +591,62 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
                   onChanged: (value) {
                     setState(() {
                       _hasInteractedContrasena = true;
+                      _isRegistrarButtonEnabled = _validateForm();
+
                     });
                   },
                   validator: (value) {
-                    if (_hasInteractedContrasena && (value == null || value.isEmpty)) {
-                      return 'El campo Contraseña es obligatorio';
-                    } else if (value != null && value.length < 8) {
-                      return 'La contraseña debe tener al menos 8 caracteres';
-                    } else if (value != null &&
-                        !RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[.,\/!@#\$%^&*()\-_=+{}|;:<>?\[\]])[A-Za-z\d.,\/!@#\$%^&*()\-_=+{}|;:<>?\[\]]{8,}$').hasMatch(value)) {
-                      return 'Debe incluir mayúscula, minúscula, número y carácter especial válido (.,/!@#\$%^&*()...)';
+                    if (_hasInteractedContrasena) {
+                      if (value == null || value.isEmpty) {
+                        return 'El campo Contraseña es obligatorio';
+                      } else if (value.length < 8) {
+                        return 'La contraseña debe tener al menos 8 caracteres';
+                      } else if (!RegExp(r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$').hasMatch(value)) {
+                        return 'Debe incluir mayúscula, minúscula, número y carácter especial';
+                      }
                     }
                     return null;
                   },
-                  onSaved: (value) => _contrasenaController.text = value ?? '',
                 ),
+                SizedBox(height: 10),
+
+                if (widget.fromLogin)
+                  TextFormField(
+                    controller: _confirmacionContrasenaController,
+                    decoration: InputDecoration(
+                      labelText: 'Confirmar Contraseña',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(10.0)),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          _isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                          });
+                        },
+                      ),
+                    ),
+                    obscureText: !_isConfirmPasswordVisible,
+                    onChanged: (value) {
+                      setState(() {
+                        _hasInteractedConfirmacionContrasena = true;
+                        _isRegistrarButtonEnabled = _validateForm();
+                      });
+                    },
+                    validator: (value) {
+                      if (_hasInteractedConfirmacionContrasena) {
+                        if (value == null || value.isEmpty) {
+                          return 'Confirma tu contraseña';
+                        } else if (value != _contrasenaController.text) {
+                          return 'Las contraseñas no coinciden';
+                        }
+                      }
+                      return null;
+                    },
+                  ),
                 SizedBox(height: 20),
+
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _isRegistrarButtonEnabled ? Color(0xFF1A5DD9) : Colors.grey,
@@ -587,19 +665,20 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
                   child: Text('Registrar Usuario', style: TextStyle(fontSize: 16, color: Colors.white)),
                 ),
                 SizedBox(height: 10),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _isObtenerDesdeApiButtonDisabled ? Colors.grey : Color(0xFF1A5DD9),
-                    padding: EdgeInsets.symmetric(vertical: 15),
-                    minimumSize: Size(double.infinity, 50),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+
+                if (!widget.fromLogin) // Solo muestra el botón si no se accede desde el login
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _isObtenerDesdeApiButtonDisabled ? Colors.grey : Color(0xFF1A5DD9),
+                      padding: EdgeInsets.symmetric(vertical: 15),
+                      minimumSize: Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10.0)),
+                    ),
+                    onPressed: _isObtenerDesdeApiButtonDisabled ? null : _obtenerDesdeApi,
+                    child: Text('Obtener Desde API', style: TextStyle(fontSize: 16, color: Colors.white)),
                   ),
-                  onPressed: _isObtenerDesdeApiButtonDisabled ? null : _obtenerDesdeApi,
-                  child: Text('Obtener Desde API', style: TextStyle(fontSize: 16, color: Colors.white)),
-                ),
               ],
             ),
-
           ),
         ),
       )

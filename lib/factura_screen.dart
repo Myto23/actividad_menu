@@ -119,7 +119,6 @@ class _FacturaScreenState extends State<FacturaScreen> {
       final String fecha = DateFormat('dd-MM-yyyy').format(chileTime);
       final String hora = DateFormat('HH:mm').format(chileTime);
 
-      // Cargamos las imágenes de manera anticipada.
       final logoData = await rootBundle.load('assets/logo.png');
       final qrCodeData = await rootBundle.load('assets/qr.png');
 
