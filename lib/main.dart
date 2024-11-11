@@ -1,17 +1,13 @@
+import 'package:actividad_menu/globals.dart';
 import 'package:actividad_menu/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'creacion_cuenta_screen.dart';
 import 'listado_screen.dart';
 import 'factura_screen.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'boleta_express_screen.dart';
 
-Future<void> main() async {
-  WidgetsFlutterBinding.ensureInitialized();
 
-  await dotenv.load(fileName: ".env");
-
-  runApp(MyApp());
-}
 
 class MyApp extends StatelessWidget {
   @override
@@ -26,6 +22,13 @@ class MyApp extends StatelessWidget {
     );
   }
 }
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await dotenv.load(fileName: ".env");
+
+  runApp(MyApp());
+}
 
 class MainScreen extends StatefulWidget {
   final String loggedInUserEmail;
@@ -37,6 +40,13 @@ class MainScreen extends StatefulWidget {
 }
 
 class _MainScreenState extends State<MainScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+    productosGlobal.clear();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -187,7 +197,31 @@ class _MainScreenState extends State<MainScreen> {
                         (Route<dynamic> route) => false,
                   );
                 },
-              )
+              ),
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Boleta Express',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                  ],
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => BoletaExpressScreen(),                ),
+                  );
+                },
+              ),
             ],
           ),
         ),
@@ -219,6 +253,12 @@ class _MainScreenState extends State<MainScreen> {
               Color(0xFF3C92D8),
               FacturaScreen(loggedInUserEmail: widget.loggedInUserEmail),
             ),
+            SizedBox(height: 2.5),
+            _buildMenuOption(
+              context,
+              'Boleta Express',
+              Color(0xFFAFAEAE),
+              BoletaExpressScreen(),            ),
           ],
         ),
 
