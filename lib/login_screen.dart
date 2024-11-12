@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
@@ -47,7 +48,6 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _ingresar(BuildContext context) async {
-
     String correo = _correoController.text;
     String contrasena = _contrasenaController.text;
 
@@ -59,7 +59,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (result.isNotEmpty) {
       String contrasenaGuardada = result[0]['contrasena'];
+      String userName = result[0]['nombre'];
+
       if (contrasena == contrasenaGuardada) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('userName', userName);
+        await prefs.setString('email', correo);
+
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
@@ -77,6 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ));
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

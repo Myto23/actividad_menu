@@ -666,7 +666,7 @@ class _CreacionCuentaScreenState extends State<CreacionCuentaScreen> {
                 ),
                 SizedBox(height: 10),
 
-                if (!widget.fromLogin) // Solo muestra el botón si no se accede desde el login
+                if (!widget.fromLogin)
                   ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _isObtenerDesdeApiButtonDisabled ? Colors.grey : Color(0xFF1A5DD9),

@@ -1,4 +1,5 @@
 import 'package:actividad_menu/globals.dart';
+import 'package:actividad_menu/lista_boletas_emitidas_screen.dart';
 import 'package:actividad_menu/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'creacion_cuenta_screen.dart';
@@ -218,7 +219,33 @@ class _MainScreenState extends State<MainScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => BoletaExpressScreen(),                ),
+                      builder: (context) => BoletaExpressScreen(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+                title: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Libro de ventas',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
+                  ],
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ListaBoletasEmitidasScreen(),
+                    ),
                   );
                 },
               ),
@@ -226,6 +253,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ),
       ),
+
 
       body: Padding(
         padding: const EdgeInsets.only(top: 4.0, left: 16.0, right: 16.0),
@@ -258,11 +286,19 @@ class _MainScreenState extends State<MainScreen> {
               context,
               'Boleta Express',
               Color(0xFFAFAEAE),
-              BoletaExpressScreen(),            ),
+              BoletaExpressScreen(),
+            ),
+            SizedBox(height: 2.5),
+            _buildMenuOption(
+              context,
+              'Libro de ventas',
+              Color(0xFF3C92D8),
+              ListaBoletasEmitidasScreen(),
+            ),
           ],
         ),
-
       ),
+
     );
   }
 
