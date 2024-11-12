@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
@@ -14,6 +15,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 import 'package:pdf/pdf.dart';
 import 'dart:typed_data';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ListaProductosScreen extends StatefulWidget {
   ListaProductosScreen({Key? key}) : super(key: key);
@@ -25,7 +27,6 @@ class ListaProductosScreen extends StatefulWidget {
 class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteAware{
   bool _isEmailEnabled = false;
   bool _enviarPorCorreo = false;
-  bool _isLoading = false;
   bool _isPlusButtonVisible = true;
   late PageController _pageController;
   final _rutController = TextEditingController();
@@ -38,56 +39,10 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
     return true;
   }
 
-  void _onSwitchChanged(bool value) {
-    setState(() {
-      _isEmailEnabled = value;
-    });
+  void _showConfirmationDialog(int folioActual) {
+    final currentDate = DateTime.now();
+    final formattedDate = '${currentDate.day}/${currentDate.month}/${currentDate.year}';
 
-    if (value) {
-      _showRUTInputDialog();
-    }
-  }
-
-  void _showRUTInputDialog() {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text('Ingrese su RUT'),
-          content: TextField(
-            controller: _rutController,
-            decoration: InputDecoration(labelText: 'RUT'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                String rut = _rutController.text;
-                if (_isValidRUT(rut)) {
-                  setState(() {
-                    _emailController.text = "";
-                  });
-                  Navigator.of(context).pop();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('RUT inválido')),
-                  );
-                }
-              },
-              child: Text('Verificar'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: Text('Cancelar'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _showConfirmationDialog() {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -98,7 +53,7 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Folio N° 328113 ha sido\n ingresado al Libro de Ventas\n del período Noviembre 2024',
+                'Folio N° $folioActual ha sido\n ingresado al Libro de Ventas\n del período $formattedDate',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 18,
@@ -187,6 +142,28 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
       ),
     );
   }
+
+
+  Future<void> saveBoletaInfo(int folio, String rut, double total) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    String? userName = prefs.getString('userName') ?? 'Usuario Desconocido'; // Si no está, usar un valor predeterminado
+
+    List<String> boletas = prefs.getStringList('boletas_emitidas') ?? [];
+
+    Map<String, dynamic> boletaData = {
+      'folio': folio,
+      'rut': rut,
+      'total': total,
+      'date': DateTime.now().toIso8601String(),
+      'user': userName,  // Guardamos el nombre del usuario
+    };
+
+    boletas.add(jsonEncode(boletaData));  // Guardamos la boleta con el nombre del usuario
+    await prefs.setStringList('boletas_emitidas', boletas);  // Guardamos la lista actualizada
+  }
+
+
 
   Future<void> _sharePDF() async {
     try {
@@ -450,6 +427,14 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
     final pdf = pw.Document();
     final robotoFont = await loadRobotoFont();
     final robotoBoldFont = await loadRobotoBoldFont();
+
+    // Obtener y actualizar el folio en SharedPreferences
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int currentFolio = prefs.getInt('folioNumber') ?? 328128; // Número inicial por defecto
+    int nextFolio = currentFolio + 1;
+    await prefs.setInt('folioNumber', nextFolio); // Guardar el siguiente folio
+
+    // Calcular montos
     double montoTotal = productosGlobal.fold(0, (sum, item) {
       return sum + (double.tryParse(item['valorTotal'].toString()) ?? 0);
     });
@@ -474,7 +459,6 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
                 style: pw.TextStyle(fontSize: 10, font: robotoFont),
               ),
               pw.SizedBox(height: 8),
-
               pw.Align(
                 alignment: pw.Alignment.centerRight,
                 child: pw.Container(
@@ -487,7 +471,7 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
                     children: [
                       pw.Text('R.U.T.: ${_rutController.text}', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.red, font: robotoBoldFont)),
                       pw.Text('BOLETA ELECTRONICA', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.red, font: robotoBoldFont)),
-                      pw.Text('N° SIN FOLIO', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.red, font: robotoBoldFont)),
+                      pw.Text('N° Folio: $currentFolio', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.red, font: robotoBoldFont)), // Folio actual
                       pw.Text('S.I.I. - SANTIAGO SUR', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.red, font: robotoBoldFont)),
                     ],
                   ),
@@ -539,7 +523,6 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
                 ),
               ),
               pw.SizedBox(height: 8),
-
               pw.Row(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
@@ -607,7 +590,6 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
                   ),
                 ],
               ),
-
               pw.SizedBox(height: 8),
               pw.Text(
                 'Desarrollado por www.facturacion.cl',
@@ -620,8 +602,15 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
       ),
     );
 
-    return pdf.save();
+    Uint8List pdfData = await pdf.save();
+
+    // Guardar el PDF en la lista de boletas emitidas
+    await _savePDF(pdfData, 'boleta_$currentFolio');
+
+    return pdfData;
   }
+
+
 
 
   void _sendEmailWithPDF() async {
@@ -630,26 +619,38 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
       return;
     }
 
-    setState(() {});
-
     try {
+      // Obtener el folio actual antes de generar el PDF
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      int folioActual = prefs.getInt('folioNumber') ?? 328128;
+
+      // Generar el PDF
       Uint8List pdfData = await _generatePDF();
 
-      final pdfFile = File('${Directory.systemTemp.path}/factura.pdf');
+      // Guardar el PDF temporalmente para el envío de correo
+      final pdfFile = File('${Directory.systemTemp.path}/factura_$folioActual.pdf');
       await pdfFile.writeAsBytes(pdfData);
 
+      // Obtener el monto total para guardarlo junto con el folio
+      double montoTotal = productosGlobal.fold(0, (sum, item) {
+        return sum + (double.tryParse(item['valorTotal'].toString()) ?? 0);
+      });
+
+      // Guardar la información de la boleta
+      await saveBoletaInfo(folioActual, _rutController.text, montoTotal);
+
+      // Enviar el correo
       final emailService = EmailService();
       await emailService.sendInvoiceByEmail(_emailController.text, pdfFile);
 
-      setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Correo enviado exitosamente")));
 
-      _showConfirmationDialog();
+      // Mostrar el diálogo de confirmación con el folio actual
+      _showConfirmationDialog(folioActual);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error al enviar correo")));
     }
   }
-
 
   @override
   void dispose() {
@@ -664,6 +665,21 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
         duration: Duration(milliseconds: 300),
         curve: Curves.easeInOut,
       );
+    }
+  }
+
+  Future<void> _savePDF(Uint8List pdfData, String fileName) async {
+    try {
+      final directory = await getApplicationDocumentsDirectory();
+      final pdfDir = Directory('${directory.path}/boletas_emitidas');
+      if (!pdfDir.existsSync()) {
+        pdfDir.createSync();
+      }
+      final file = File('${pdfDir.path}/$fileName.pdf');
+      await file.writeAsBytes(pdfData);
+      print('PDF guardado en la ruta: ${file.path}');
+    } catch (e) {
+      print('Error al guardar PDF: $e');
     }
   }
 
@@ -1144,7 +1160,10 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
                       SizedBox(height: 12),
                       ElevatedButton(
                         onPressed: _sendEmailWithPDF,
-                        child: Text('Emitir', style: TextStyle(color: Colors.white),),
+                        child: Text(
+                          'Emitir',
+                          style: TextStyle(color: Colors.white),
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.green,
                           padding: EdgeInsets.symmetric(vertical: 14),
