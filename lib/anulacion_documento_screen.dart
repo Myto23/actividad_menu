@@ -132,7 +132,7 @@ class AnulacionDocumentoScreen extends StatelessWidget {
     final robotoFont = await loadRobotoFont();
     final robotoBoldFont = await loadRobotoBoldFont();
 
-    double montoTotal = 1000; // Simulación de monto total
+    double montoTotal = 1000;
     double iva = montoTotal * 0.19;
 
     pdf.addPage(

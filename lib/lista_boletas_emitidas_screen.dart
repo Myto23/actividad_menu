@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
-import 'detalle_venta_screen.dart'; // Asegúrate de importar la nueva pantalla
+import 'detalle_venta_screen.dart';
 
 class ListaBoletasEmitidasScreen extends StatefulWidget {
   @override
@@ -65,11 +65,10 @@ class _ListaBoletasEmitidasScreenState extends State<ListaBoletasEmitidasScreen>
 
           return GestureDetector(
             onTap: () {
-              // Navegar a la pantalla de detalle
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => DetalleVentaScreen(boleta: boleta), // Pasando los datos de la boleta
+                  builder: (context) => DetalleVentaScreen(boleta: boleta),
                 ),
               );
 

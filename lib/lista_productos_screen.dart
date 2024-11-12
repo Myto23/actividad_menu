@@ -147,7 +147,7 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
   Future<void> saveBoletaInfo(int folio, String rut, double total) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
-    String? userName = prefs.getString('userName') ?? 'Usuario Desconocido'; // Si no está, usar un valor predeterminado
+    String? userName = prefs.getString('userName') ?? 'Usuario Desconocido';
 
     List<String> boletas = prefs.getStringList('boletas_emitidas') ?? [];
 
@@ -156,11 +156,11 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
       'rut': rut,
       'total': total,
       'date': DateTime.now().toIso8601String(),
-      'user': userName,  // Guardamos el nombre del usuario
+      'user': userName,
     };
 
-    boletas.add(jsonEncode(boletaData));  // Guardamos la boleta con el nombre del usuario
-    await prefs.setStringList('boletas_emitidas', boletas);  // Guardamos la lista actualizada
+    boletas.add(jsonEncode(boletaData));
+    await prefs.setStringList('boletas_emitidas', boletas);
   }
 
 
@@ -428,13 +428,11 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
     final robotoFont = await loadRobotoFont();
     final robotoBoldFont = await loadRobotoBoldFont();
 
-    // Obtener y actualizar el folio en SharedPreferences
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    int currentFolio = prefs.getInt('folioNumber') ?? 328128; // Número inicial por defecto
+    int currentFolio = prefs.getInt('folioNumber') ?? 328128;
     int nextFolio = currentFolio + 1;
-    await prefs.setInt('folioNumber', nextFolio); // Guardar el siguiente folio
+    await prefs.setInt('folioNumber', nextFolio);
 
-    // Calcular montos
     double montoTotal = productosGlobal.fold(0, (sum, item) {
       return sum + (double.tryParse(item['valorTotal'].toString()) ?? 0);
     });
@@ -471,7 +469,7 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
                     children: [
                       pw.Text('R.U.T.: ${_rutController.text}', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.red, font: robotoBoldFont)),
                       pw.Text('BOLETA ELECTRONICA', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.red, font: robotoBoldFont)),
-                      pw.Text('N° Folio: $currentFolio', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.red, font: robotoBoldFont)), // Folio actual
+                      pw.Text('N° Folio: $currentFolio', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.red, font: robotoBoldFont)),
                       pw.Text('S.I.I. - SANTIAGO SUR', style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold, color: PdfColors.red, font: robotoBoldFont)),
                     ],
                   ),
@@ -604,7 +602,6 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
 
     Uint8List pdfData = await pdf.save();
 
-    // Guardar el PDF en la lista de boletas emitidas
     await _savePDF(pdfData, 'boleta_$currentFolio');
 
     return pdfData;
@@ -620,32 +617,25 @@ class _ListaProductosScreenState extends State<ListaProductosScreen> with RouteA
     }
 
     try {
-      // Obtener el folio actual antes de generar el PDF
       SharedPreferences prefs = await SharedPreferences.getInstance();
       int folioActual = prefs.getInt('folioNumber') ?? 328128;
 
-      // Generar el PDF
       Uint8List pdfData = await _generatePDF();
 
-      // Guardar el PDF temporalmente para el envío de correo
       final pdfFile = File('${Directory.systemTemp.path}/factura_$folioActual.pdf');
       await pdfFile.writeAsBytes(pdfData);
 
-      // Obtener el monto total para guardarlo junto con el folio
       double montoTotal = productosGlobal.fold(0, (sum, item) {
         return sum + (double.tryParse(item['valorTotal'].toString()) ?? 0);
       });
 
-      // Guardar la información de la boleta
       await saveBoletaInfo(folioActual, _rutController.text, montoTotal);
 
-      // Enviar el correo
       final emailService = EmailService();
       await emailService.sendInvoiceByEmail(_emailController.text, pdfFile);
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Correo enviado exitosamente")));
 
-      // Mostrar el diálogo de confirmación con el folio actual
       _showConfirmationDialog(folioActual);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("Error al enviar correo")));

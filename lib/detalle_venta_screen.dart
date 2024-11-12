@@ -1,8 +1,7 @@
-import 'package:actividad_menu/anulacion_documento_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
-import 'dart:typed_data'; // Asegúrate de incluir esta importación
+import 'dart:typed_data';
 import 'package:path_provider/path_provider.dart';
 import 'package:printing/printing.dart';
 
@@ -44,7 +43,7 @@ class DetalleVentaScreen extends StatelessWidget {
       print('Intentando abrir el PDF desde la ruta: $pdfPath');
 
       if (await pdfFile.exists()) {
-        Uint8List pdfData = await pdfFile.readAsBytes(); // Asegúrate que esto devuelve Uint8List correctamente
+        Uint8List pdfData = await pdfFile.readAsBytes();
 
         Navigator.push(
           context,

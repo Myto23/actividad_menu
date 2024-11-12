@@ -3,7 +3,6 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 
 class OpenAIService {
-  // Carga la clave de OpenAI desde el archivo .env
   final String apiKey = dotenv.env['OPENAI_API_KEY'] ?? '';
 
   Future<String> generateInvoiceDescription(List<Map<String, dynamic>> items, double totalConImpuesto) async {

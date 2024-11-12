@@ -59,13 +59,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (result.isNotEmpty) {
       String contrasenaGuardada = result[0]['contrasena'];
-      String userName = result[0]['nombre'];  // Obtener el nombre del usuario
+      String userName = result[0]['nombre'];
 
       if (contrasena == contrasenaGuardada) {
-        // Guardar el nombre en SharedPreferences
         SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('userName', userName);  // Guardar el nombre del usuario
-        await prefs.setString('email', correo);  // Guardar el correo
+        await prefs.setString('userName', userName);
+        await prefs.setString('email', correo);
 
         Navigator.pushReplacement(
           context,

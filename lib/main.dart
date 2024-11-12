@@ -244,7 +244,7 @@ class _MainScreenState extends State<MainScreen> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => ListaBoletasEmitidasScreen(), // Asegúrate de que `ListaBoletasScreen` esté implementado
+                      builder: (context) => ListaBoletasEmitidasScreen(),
                     ),
                   );
                 },
@@ -293,7 +293,7 @@ class _MainScreenState extends State<MainScreen> {
               context,
               'Libro de ventas',
               Color(0xFF3C92D8),
-              ListaBoletasEmitidasScreen(), // Asegúrate de que `ListaBoletasScreen` esté implementado
+              ListaBoletasEmitidasScreen(),
             ),
           ],
         ),
